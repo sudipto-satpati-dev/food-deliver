@@ -1,0 +1,49 @@
+@import "leaflet/dist/leaflet.css";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 100% 98%;
+    --foreground: 0 0% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 12%;
+    --primary: 11 70% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 30% 94%;
+    --secondary-foreground: 0 0% 12%;
+    --muted: 30 10% 94%;
+    --muted-foreground: 0 0% 42%;
+    --accent: 37 91% 55%;
+    --accent-foreground: 0 0% 12%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 30% 90%;
+    --input: 30 30% 90%;
+    --ring: 11 70% 52%;
+    --radius: 0.75rem;
+  }
+
+  body {
+    @apply bg-brand-bg text-brand-text font-body antialiased selection:bg-brand-primary/20 selection:text-brand-primary;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-semibold text-brand-text;
+  }
+}
+
+/* Custom scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
