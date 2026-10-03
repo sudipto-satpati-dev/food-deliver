@@ -183,6 +183,9 @@ export const CheckoutPage: React.FC = () => {
       const rzpData = await createRazorpayOrderDirect(amount)
       const hasScript = await loadRazorpayScript()
 
+      const rawPhone = selectedAddress?.phone || user.user_metadata?.phone || ''
+      const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10) || '9876543210'
+
       const options = {
         key: rzpData.key_id,
         amount: Math.round(amount * 100), // in paise
@@ -191,12 +194,30 @@ export const CheckoutPage: React.FC = () => {
         description: 'Online Food Order Payment',
         order_id: rzpData.razorpay_order_id.startsWith('order_dev') ? undefined : rzpData.razorpay_order_id,
         prefill: {
-          name: selectedAddress?.contact_name || user.user_metadata?.full_name || user.email,
-          contact: selectedAddress?.phone || user.user_metadata?.phone || '9876543210',
-          email: user.email,
+          name: selectedAddress?.contact_name || user.user_metadata?.full_name || user.email || 'Customer',
+          contact: cleanPhone,
+          email: user.email || '',
         },
         theme: {
           color: '#D94F30',
+        },
+        config: {
+          display: {
+            blocks: {
+              banks: {
+                name: 'Pay via UPI / QR / Google Pay / PhonePe',
+                instruments: [
+                  {
+                    method: 'upi',
+                  },
+                ],
+              },
+            },
+            sequence: ['block.banks'],
+            preferences: {
+              show_default_blocks: true,
+            },
+          },
         },
         handler: async function (response: any) {
           try {
