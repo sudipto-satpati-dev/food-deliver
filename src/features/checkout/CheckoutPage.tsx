@@ -31,7 +31,7 @@ import { toast } from 'sonner'
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { items, couponCode, getSubtotal } = useCartStore()
+  const { items, couponCode, getSubtotal, clearCart } = useCartStore()
 
   const { data: addresses, isLoading: isLoadingAddresses } = useUserAddresses(user?.id)
   const { data: settings } = useSettingsQuery()
@@ -201,24 +201,6 @@ export const CheckoutPage: React.FC = () => {
         theme: {
           color: '#D94F30',
         },
-        config: {
-          display: {
-            blocks: {
-              banks: {
-                name: 'Pay via UPI / QR / Google Pay / PhonePe',
-                instruments: [
-                  {
-                    method: 'upi',
-                  },
-                ],
-              },
-            },
-            sequence: ['block.banks'],
-            preferences: {
-              show_default_blocks: true,
-            },
-          },
-        },
         handler: async function (response: any) {
           try {
             // Verify payment AND create placed+paid order in DB in 1 atomic step!
@@ -231,7 +213,8 @@ export const CheckoutPage: React.FC = () => {
               razorpay_order_id: response.razorpay_order_id || rzpData.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id || `pay_${Date.now()}`,
             })
-            // Payment verified & order created! Navigate to Order details
+            // Payment verified & order created! Clear cart and navigate to Order details
+            clearCart()
             navigate(`/orders/${res.order_id}`)
           } catch (err: any) {
             toast.error(err.message || 'Payment verification failed. Please try again.')
@@ -259,6 +242,7 @@ export const CheckoutPage: React.FC = () => {
           razorpay_order_id: rzpData.razorpay_order_id,
           razorpay_payment_id: `pay_mock_${Date.now()}`,
         })
+        clearCart()
         navigate(`/orders/${res.order_id}`)
       }
     } catch (err: any) {

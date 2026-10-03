@@ -149,24 +149,6 @@ export const OrderDetailPage: React.FC = () => {
           email: user.email || '',
         },
         theme: { color: '#D94F30' },
-        config: {
-          display: {
-            blocks: {
-              banks: {
-                name: 'Pay via UPI / QR / Google Pay / PhonePe',
-                instruments: [
-                  {
-                    method: 'upi',
-                  },
-                ],
-              },
-            },
-            sequence: ['block.banks'],
-            preferences: {
-              show_default_blocks: true,
-            },
-          },
-        },
         handler: async function (response: any) {
           await verifyRzpMutation.mutateAsync({
             razorpay_order_id: response.razorpay_order_id || rzpData.razorpay_order_id,

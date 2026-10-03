@@ -14,14 +14,10 @@ export function usePlaceOrderMutation() {
 
   return useMutation({
     mutationFn: (payload: PlaceOrderPayload) => placeOrder(payload),
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
-      // For COD orders, clear cart and notify immediately.
-      // For online orders, cart remains intact until payment succeeds via verifyRazorpayPayment!
-      if (variables.payment_method === 'cod') {
-        clearCart()
-        toast.success(`Order #${data.order_no} placed successfully! 🎉`)
-      }
+      clearCart()
+      toast.success(`Order #${data.order_no} placed successfully! 🎉`)
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to place order.')
