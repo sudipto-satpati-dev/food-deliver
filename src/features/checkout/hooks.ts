@@ -14,10 +14,14 @@ export function usePlaceOrderMutation() {
 
   return useMutation({
     mutationFn: (payload: PlaceOrderPayload) => placeOrder(payload),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
-      clearCart()
-      toast.success(`Order #${data.order_no} placed successfully! 🎉`)
+      // For COD orders, clear cart and notify immediately.
+      // For online orders, cart remains intact until payment succeeds via verifyRazorpayPayment!
+      if (variables.payment_method === 'cod') {
+        clearCart()
+        toast.success(`Order #${data.order_no} placed successfully! 🎉`)
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to place order.')
@@ -33,6 +37,7 @@ export function useCreateRazorpayOrderMutation() {
 
 export function useVerifyRazorpayPaymentMutation() {
   const queryClient = useQueryClient()
+  const { clearCart } = useCartStore()
 
   return useMutation({
     mutationFn: (payload: {
@@ -43,7 +48,8 @@ export function useVerifyRazorpayPaymentMutation() {
     }) => verifyRazorpayPayment(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
-      toast.success('Payment verified successfully! Order placed.')
+      clearCart()
+      toast.success('Payment verified! Order placed successfully! 🎉')
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Payment verification failed.')

@@ -202,9 +202,18 @@ export function useAdminOrdersQuery() {
         (payload) => {
           queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
 
-          if (payload.eventType === 'INSERT') {
+          const newRec = payload.new as any
+          const oldRec = payload.old as any
+
+          const isNewCodOrder = payload.eventType === 'INSERT' && newRec?.status === 'placed'
+          const isOnlinePaidOrder =
+            payload.eventType === 'UPDATE' &&
+            oldRec?.status === 'pending_payment' &&
+            newRec?.status === 'placed'
+
+          if (isNewCodOrder || isOnlinePaidOrder) {
             soundManager.playNewOrderAlert()
-            toast.success(`🚨 NEW ORDER #${(payload.new as any).order_no} RECEIVED!`, {
+            toast.success(`🚨 NEW ORDER #${newRec.order_no} RECEIVED!`, {
               duration: 8000,
             })
           }

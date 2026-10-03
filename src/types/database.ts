@@ -517,8 +517,10 @@ export interface Database {
           p_items: Json
           p_address_id: string
           p_payment_method: PaymentMethod
-          p_coupon_code?: string
-          p_notes?: string
+          p_coupon_code?: string | null
+          p_notes?: string | null
+          p_razorpay_order_id?: string | null
+          p_razorpay_payment_id?: string | null
         }
         Returns: Json
       }

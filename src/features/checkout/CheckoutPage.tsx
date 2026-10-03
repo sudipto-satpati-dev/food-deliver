@@ -5,11 +5,8 @@ import { useCartStore } from '@/stores/cart'
 import { useUserAddresses } from '@/features/address/hooks'
 import { useSettingsQuery } from '@/features/admin/hooks'
 import { useValidateCouponQuery } from '@/features/menu/hooks'
-import {
-  usePlaceOrderMutation,
-  useCreateRazorpayOrderMutation,
-  useVerifyRazorpayPaymentMutation,
-} from './hooks'
+import { createRazorpayOrderDirect } from './api'
+import { usePlaceOrderMutation } from './hooks'
 import { calculateHaversineDistanceKm } from '@/lib/geo'
 import { loadRazorpayScript } from '@/lib/razorpay'
 import { Price } from '@/components/common/Price'
@@ -43,8 +40,6 @@ export const CheckoutPage: React.FC = () => {
   const { data: couponData } = useValidateCouponQuery(couponCode, subtotal)
 
   const placeOrderMutation = usePlaceOrderMutation()
-  const createRzpMutation = useCreateRazorpayOrderMutation()
-  const verifyRzpMutation = useVerifyRazorpayPaymentMutation()
 
   const [selectedAddressId, setSelectedAddressId] = useState<string>('')
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod')
@@ -161,28 +156,31 @@ export const CheckoutPage: React.FC = () => {
         notes: i.notes || undefined,
       }))
 
-      const res = await placeOrderMutation.mutateAsync({
-        items: orderItems,
-        address_id: selectedAddress.id,
-        payment_method: paymentMethod,
-        coupon_code: couponCode || undefined,
-        notes: deliveryNotes || undefined,
-      })
-
       if (paymentMethod === 'cod') {
+        const res = await placeOrderMutation.mutateAsync({
+          items: orderItems,
+          address_id: selectedAddress.id,
+          payment_method: 'cod',
+          coupon_code: couponCode || undefined,
+          notes: deliveryNotes || undefined,
+        })
         navigate(`/orders/${res.order_id}`)
       } else {
-        // Online payment via Razorpay Checkout
-        handleRazorpayPayment(res.order_id, res.total, res.order_no)
+        // Online payment: Open Razorpay modal FIRST.
+        // DB order is created ONLY after payment succeeds!
+        handleRazorpayPayment(orderItems, grandTotal)
       }
     } catch (err: any) {
       // Error handled by mutation onError
     }
   }
 
-  const handleRazorpayPayment = async (orderId: string, amount: number, orderNo: number) => {
+  const handleRazorpayPayment = async (
+    orderItems: any[],
+    amount: number
+  ) => {
     try {
-      const rzpData = await createRzpMutation.mutateAsync(orderId)
+      const rzpData = await createRazorpayOrderDirect(amount)
       const hasScript = await loadRazorpayScript()
 
       const options = {
@@ -190,11 +188,11 @@ export const CheckoutPage: React.FC = () => {
         amount: Math.round(amount * 100), // in paise
         currency: 'INR',
         name: settings?.restaurant_name || 'Dinning Zone',
-        description: `Order #${orderNo} Payment`,
+        description: 'Online Food Order Payment',
         order_id: rzpData.razorpay_order_id.startsWith('order_dev') ? undefined : rzpData.razorpay_order_id,
         prefill: {
-          name: selectedAddress?.contact_name || user.email,
-          contact: selectedAddress?.phone || '',
+          name: selectedAddress?.contact_name || user.user_metadata?.full_name || user.email,
+          contact: selectedAddress?.phone || user.user_metadata?.phone || '9876543210',
           email: user.email,
         },
         theme: {
@@ -202,21 +200,25 @@ export const CheckoutPage: React.FC = () => {
         },
         handler: async function (response: any) {
           try {
-            await verifyRzpMutation.mutateAsync({
+            // Verify payment AND create placed+paid order in DB in 1 atomic step!
+            const res = await placeOrderMutation.mutateAsync({
+              items: orderItems,
+              address_id: selectedAddress!.id,
+              payment_method: 'online',
+              coupon_code: couponCode || undefined,
+              notes: deliveryNotes || undefined,
               razorpay_order_id: response.razorpay_order_id || rzpData.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature || 'mock_sig',
-              order_id: orderId,
+              razorpay_payment_id: response.razorpay_payment_id || `pay_${Date.now()}`,
             })
-            navigate(`/payment-result?order_id=${orderId}&status=success`)
-          } catch {
-            navigate(`/payment-result?order_id=${orderId}&status=failed`)
+            // Payment verified & order created! Navigate to Order details
+            navigate(`/orders/${res.order_id}`)
+          } catch (err: any) {
+            toast.error(err.message || 'Payment verification failed. Please try again.')
           }
         },
         modal: {
           ondismiss: function () {
-            toast.info('Payment window closed. Order saved as pending payment.')
-            navigate(`/payment-result?order_id=${orderId}&status=failed`)
+            toast.info('Payment cancelled. Your items remain in your cart.')
           },
         },
       }
@@ -227,24 +229,23 @@ export const CheckoutPage: React.FC = () => {
       } else {
         // Fallback for local development if Razorpay script is blocked or offline
         toast.info('Simulating payment completion (Dev mode)...')
-        await verifyRzpMutation.mutateAsync({
+        const res = await placeOrderMutation.mutateAsync({
+          items: orderItems,
+          address_id: selectedAddress!.id,
+          payment_method: 'online',
+          coupon_code: couponCode || undefined,
+          notes: deliveryNotes || undefined,
           razorpay_order_id: rzpData.razorpay_order_id,
           razorpay_payment_id: `pay_mock_${Date.now()}`,
-          razorpay_signature: 'mock_sig',
-          order_id: orderId,
         })
-        navigate(`/payment-result?order_id=${orderId}&status=success`)
+        navigate(`/orders/${res.order_id}`)
       }
     } catch (err: any) {
-      toast.error('Could not launch payment gateway. Redirecting to order...')
-      navigate(`/payment-result?order_id=${orderId}&status=failed`)
+      toast.error('Could not launch payment gateway. Please try again.')
     }
   }
 
-  const isSubmitting =
-    placeOrderMutation.isPending ||
-    createRzpMutation.isPending ||
-    verifyRzpMutation.isPending
+  const isSubmitting = placeOrderMutation.isPending
 
   const getLabelIcon = (label: string) => {
     const l = label.toLowerCase()

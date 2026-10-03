@@ -19,7 +19,7 @@ serve(async (req: Request) => {
     const keyId = Deno.env.get('RAZORPAY_KEY_ID') ?? ''
     const keySecret = Deno.env.get('RAZORPAY_KEY_SECRET') ?? ''
 
-    // 1. Verify caller JWT with anon client
+    // 1. Verify caller JWT
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
@@ -45,70 +45,65 @@ serve(async (req: Request) => {
     }
 
     // 2. Read request body
-    const { order_id } = await req.json()
-    if (!order_id) {
-      return new Response(JSON.stringify({ error: 'Missing order_id' }), {
+    const body = await req.json()
+    const { order_id, amount } = body
+
+    let amountPaise = 0
+    let receiptStr = `rcpt_${Date.now()}`
+
+    if (order_id) {
+      const { data: order, error: orderErr } = await supabaseAnon
+        .from('orders')
+        .select('*')
+        .eq('id', order_id)
+        .single()
+
+      if (orderErr || !order) {
+        return new Response(JSON.stringify({ error: 'Order not found or access denied' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      amountPaise = Math.round(Number(order.total) * 100)
+      receiptStr = `order_${order.order_no}`
+
+      if (order.razorpay_order_id) {
+        return new Response(
+          JSON.stringify({
+            key_id: keyId,
+            razorpay_order_id: order.razorpay_order_id,
+            amount: amountPaise,
+            currency: 'INR',
+            order_no: order.order_no,
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    } else if (amount) {
+      amountPaise = Math.round(Number(amount) * 100)
+    } else {
+      return new Response(JSON.stringify({ error: 'Missing order_id or amount' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // 3. Load order with caller's JWT (RLS enforcement)
-    const { data: order, error: orderErr } = await supabaseAnon
-      .from('orders')
-      .select('*')
-      .eq('id', order_id)
-      .single()
-
-    if (orderErr || !order) {
-      return new Response(JSON.stringify({ error: 'Order not found or access denied' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    if (order.payment_method !== 'online') {
-      return new Response(JSON.stringify({ error: 'Order payment method is not online' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const amountPaise = Math.round(Number(order.total) * 100)
-
-    // 4. Reuse existing razorpay_order_id if present (Idempotent)
-    if (order.razorpay_order_id) {
-      return new Response(
-        JSON.stringify({
-          key_id: keyId,
-          razorpay_order_id: order.razorpay_order_id,
-          amount: amountPaise,
-          currency: 'INR',
-          order_no: order.order_no,
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // 5. If credentials missing (local dev fallback mode)
+    // 3. Fallback for local development mode
     if (!keyId || !keySecret) {
       const mockOrderNo = `order_dev_${Date.now()}`
-      const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
-      await supabaseAdmin.from('orders').update({ razorpay_order_id: mockOrderNo }).eq('id', order.id)
-
       return new Response(
         JSON.stringify({
-          key_id: keyId || 'rzp_test_mock_key',
+          key_id: keyId || 'rzp_test_TjWfZ8cWlcw9zc',
           razorpay_order_id: mockOrderNo,
           amount: amountPaise,
           currency: 'INR',
-          order_no: order.order_no,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // 6. Call Razorpay API to create order
+    // 4. Call Razorpay API to create order
     const rzpAuth = 'Basic ' + btoa(`${keyId}:${keySecret}`)
     const rzpRes = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
@@ -119,26 +114,29 @@ serve(async (req: Request) => {
       body: JSON.stringify({
         amount: amountPaise,
         currency: 'INR',
-        receipt: `order_${order.order_no}`,
-        notes: { order_id: order.id },
+        receipt: receiptStr,
       }),
     })
 
     const rzpData = await rzpRes.json()
 
     if (!rzpRes.ok) {
-      return new Response(JSON.stringify({ error: rzpData.error?.description || 'Razorpay order creation failed' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ error: rzpData.error?.description || 'Razorpay order creation failed' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
-    // 7. Save razorpay_order_id via Service Role
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
-    await supabaseAdmin
-      .from('orders')
-      .update({ razorpay_order_id: rzpData.id })
-      .eq('id', order.id)
+    if (order_id) {
+      const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
+      await supabaseAdmin
+        .from('orders')
+        .update({ razorpay_order_id: rzpData.id })
+        .eq('id', order_id)
+    }
 
     return new Response(
       JSON.stringify({
@@ -146,7 +144,6 @@ serve(async (req: Request) => {
         razorpay_order_id: rzpData.id,
         amount: amountPaise,
         currency: 'INR',
-        order_no: order.order_no,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

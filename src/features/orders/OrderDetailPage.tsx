@@ -50,6 +50,10 @@ export const OrderDetailPage: React.FC = () => {
   const hasRider = Boolean(order?.rider_id)
   const { data: riderInfo } = useOrderRiderInfo(orderId, hasRider)
 
+  const { user } = useAuth()
+  const createRzpMutation = useCreateRazorpayOrderMutation()
+  const verifyRzpMutation = useVerifyRazorpayPaymentMutation()
+
   if (isLoading) {
     return (
       <div className="py-4 space-y-4 max-w-xl mx-auto">
@@ -123,10 +127,6 @@ export const OrderDetailPage: React.FC = () => {
     navigate('/cart')
   }
 
-  const { user } = useAuth()
-  const createRzpMutation = useCreateRazorpayOrderMutation()
-  const verifyRzpMutation = useVerifyRazorpayPaymentMutation()
-
   const handlePayNow = async () => {
     if (!order || !user) return
     try {
@@ -142,7 +142,7 @@ export const OrderDetailPage: React.FC = () => {
         order_id: rzpData.razorpay_order_id?.startsWith('order_dev') ? undefined : rzpData.razorpay_order_id,
         prefill: {
           name: order.customer_name || user.email,
-          contact: order.customer_phone || '',
+          contact: order.customer_phone || user.user_metadata?.phone || '9876543210',
           email: user.email,
         },
         theme: { color: '#D94F30' },

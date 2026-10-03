@@ -24,7 +24,6 @@ import {
   Phone,
   User,
   Eye,
-  AlertTriangle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -64,14 +63,15 @@ export const AdminOrdersPage: React.FC = () => {
   const placedCount = orders?.filter((o) => o.status === 'placed').length || 0
 
   const filteredOrders = (orders || []).filter((o) => {
-    if (selectedTab === 'all') return true
-    if (selectedTab === 'placed') return o.status === 'placed' || o.status === 'pending_payment'
+    if (selectedTab === 'all') return o.status !== 'pending_payment'
+    if (selectedTab === 'placed') return o.status === 'placed'
     if (selectedTab === 'accepted') return o.status === 'accepted'
     if (selectedTab === 'preparing') return o.status === 'preparing'
     if (selectedTab === 'ready') return o.status === 'ready'
     if (selectedTab === 'out_for_delivery') return o.status === 'out_for_delivery'
     if (selectedTab === 'completed')
       return o.status === 'delivered' || o.status === 'cancelled' || o.status === 'rejected'
+    if (selectedTab === 'pending_payment') return o.status === 'pending_payment'
     return true
   })
 
@@ -129,13 +129,14 @@ export const AdminOrdersPage: React.FC = () => {
       {/* Tabs Bar */}
       <div className="flex overflow-x-auto no-scrollbar border-b border-brand-border gap-2 pb-1">
         {[
-          { id: 'all', label: 'All Orders', count: orders?.length },
+          { id: 'all', label: 'Kitchen Orders', count: orders?.filter((o) => o.status !== 'pending_payment').length },
           { id: 'placed', label: 'New / Placed', count: placedCount, highlight: placedCount > 0 },
           { id: 'accepted', label: 'Accepted', count: orders?.filter((o) => o.status === 'accepted').length },
           { id: 'preparing', label: 'Preparing', count: orders?.filter((o) => o.status === 'preparing').length },
           { id: 'ready', label: 'Ready for Pickup', count: orders?.filter((o) => o.status === 'ready').length },
           { id: 'out_for_delivery', label: 'Out for Delivery', count: orders?.filter((o) => o.status === 'out_for_delivery').length },
           { id: 'completed', label: 'Completed / Cancelled' },
+          { id: 'pending_payment', label: 'Unpaid Attempts', count: orders?.filter((o) => o.status === 'pending_payment').length },
         ].map((tab) => (
           <button
             key={tab.id}

@@ -71,7 +71,7 @@ export const OrdersPage: React.FC = () => {
   }
 
   const activeOrdersList = orders?.filter((o) =>
-    ['pending_payment', 'placed', 'accepted', 'preparing', 'ready', 'out_for_delivery'].includes(
+    ['placed', 'accepted', 'preparing', 'ready', 'out_for_delivery'].includes(
       o.status
     )
   ) || []
