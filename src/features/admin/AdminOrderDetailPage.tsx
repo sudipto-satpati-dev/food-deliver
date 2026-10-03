@@ -20,12 +20,8 @@ import {
   MapPin,
   Clock,
   Bike,
-  CheckCircle2,
-  XCircle,
-  ChefHat,
   ShieldAlert,
 } from 'lucide-react'
-import { toast } from 'sonner'
 
 export const AdminOrderDetailPage: React.FC = () => {
   const { id: orderId } = useParams<{ id: string }>()

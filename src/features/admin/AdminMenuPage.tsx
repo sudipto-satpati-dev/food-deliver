@@ -6,7 +6,7 @@ import { ErrorState } from '@/components/common/ErrorState'
 import { EmptyState } from '@/components/common/EmptyState'
 import { VegDot } from '@/components/common/VegDot'
 import { Price } from '@/components/common/Price'
-import { Plus, Search, Edit2, Trash2, Star, Sparkles } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Sparkles } from 'lucide-react'
 
 export const AdminMenuPage: React.FC = () => {
   const { data: menuItems, isLoading, isError, refetch } = useMenuItemsQuery()

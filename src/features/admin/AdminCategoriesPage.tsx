@@ -8,7 +8,7 @@ import {
 import { Skeletons } from '@/components/common/Skeletons'
 import { ErrorState } from '@/components/common/ErrorState'
 import { EmptyState } from '@/components/common/EmptyState'
-import { Plus, Edit2, Trash2, Layers, Check, X } from 'lucide-react'
+import { Plus, Edit2, Trash2, X } from 'lucide-react'
 
 export const AdminCategoriesPage: React.FC = () => {
   const { data: categories, isLoading, isError, refetch } = useCategoriesQuery()

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import { Settings, Category, MenuItem, ItemVariant, ItemAddon, OrderStatus } from '@/types/database'
 import { OrderWithItems } from '@/features/orders/api'
 
@@ -258,36 +259,67 @@ export async function createRiderAccount(payload: {
   password: string
 }): Promise<void> {
   try {
+    // 1. Try calling the Edge Function if deployed
     const { data, error } = await supabase.functions.invoke('admin-create-rider', {
       body: payload,
     })
 
-    if (error || !data) {
-      // Fallback: Use standard signup & profile update for dev environment
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: payload.email,
-        password: payload.password,
-        options: {
-          data: {
-            full_name: payload.full_name,
-            phone: payload.phone,
-            role: 'rider',
-          },
+    if (!error && data?.ok) {
+      return
+    }
+
+    // 2. Fallback for local development environment:
+    // Create an isolated temporary Supabase client with persistSession: false
+    // so that Admin's active session in localStorage is 100% untouched!
+    const tempClient = createClient(
+      (import.meta as any).env.VITE_SUPABASE_URL,
+      (import.meta as any).env.VITE_SUPABASE_ANON_KEY,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
         },
-      })
+      }
+    )
 
-      if (signUpError) throw signUpError
+    const { data: authData, error: signUpError } = await tempClient.auth.signUp({
+      email: payload.email,
+      password: payload.password,
+      options: {
+        data: {
+          full_name: payload.full_name,
+          phone: payload.phone,
+          role: 'rider',
+        },
+      },
+    })
 
-      if (authData.user) {
+    if (signUpError) throw signUpError
+
+    if (authData.user) {
+      // 3. Update profile role to 'rider' using main Supabase client (logged in as Admin)
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: payload.full_name,
+          phone: payload.phone,
+          role: 'rider',
+          is_active: true,
+        })
+        .eq('id', authData.user.id)
+
+      if (updateError) {
+        // Fallback upsert if profile row did not trigger automatically
         await supabase
           .from('profiles')
-          .update({
+          .upsert({
+            id: authData.user.id,
             full_name: payload.full_name,
             phone: payload.phone,
             role: 'rider',
             is_active: true,
           })
-          .eq('id', authData.user.id)
       }
     }
   } catch (err: any) {

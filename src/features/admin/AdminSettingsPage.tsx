@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useSettingsQuery, useUpdateSettingsMutation } from './hooks'
 import { Skeletons } from '@/components/common/Skeletons'
 import { ErrorState } from '@/components/common/ErrorState'
-import { MapPin, Plus, Trash2, Save, Store, Truck, DollarSign, CreditCard, Phone, Clock } from 'lucide-react'
+import { Plus, Trash2, Save, Store, Truck, DollarSign, CreditCard, Clock } from 'lucide-react'
 
 export const AdminSettingsPage: React.FC = () => {
   const { data: settings, isLoading, isError, refetch } = useSettingsQuery()

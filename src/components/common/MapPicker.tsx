@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import { calculateHaversineDistanceKm } from '@/lib/geo'
-import { Navigation, MapPin } from 'lucide-react'
+import { Navigation } from 'lucide-react'
 import { toast } from 'sonner'
 
 // Fix default Leaflet icon paths in Vite
@@ -39,8 +39,6 @@ export const MapPicker: React.FC<MapPickerProps> = ({
   const defaultLat = initialLat || restaurantLat
   const defaultLng = initialLng || restaurantLng
 
-  const [currentLat, setCurrentLat] = useState(defaultLat)
-  const [currentLng, setCurrentLng] = useState(defaultLng)
   const [isLocating, setIsLocating] = useState(false)
 
   // Initialize Map
@@ -112,9 +110,6 @@ export const MapPicker: React.FC<MapPickerProps> = ({
   }, [])
 
   const handlePositionUpdate = async (newLat: number, newLng: number) => {
-    setCurrentLat(newLat)
-    setCurrentLng(newLng)
-
     const dist = calculateHaversineDistanceKm(restaurantLat, restaurantLng, newLat, newLng)
 
     // Optional reverse geocoding via Nominatim (called only on drag-end)

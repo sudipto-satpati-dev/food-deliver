@@ -9,7 +9,7 @@ import { ErrorState } from '@/components/common/ErrorState'
 import { VegDot } from '@/components/common/VegDot'
 import { Price } from '@/components/common/Price'
 import { BRAND_CONFIG } from '@/config/brand'
-import { MapPin, Bell, Search, Sparkles, Clock, AlertCircle, Plus, Star } from 'lucide-react'
+import { MapPin, Bell, Search, Sparkles, AlertCircle } from 'lucide-react'
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate()

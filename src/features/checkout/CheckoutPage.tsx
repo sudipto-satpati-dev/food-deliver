@@ -12,12 +12,10 @@ import {
 } from './hooks'
 import { calculateHaversineDistanceKm } from '@/lib/geo'
 import { Price } from '@/components/common/Price'
-import { Address } from '@/types/database'
 import {
   MapPin,
   Plus,
   CheckCircle2,
-  AlertTriangle,
   CreditCard,
   Banknote,
   ChevronRight,
