@@ -57,3 +57,7 @@ class SoundManager {
 }
 
 export const soundManager = new SoundManager()
+
+export function playOrderSound(_type: 'new' | 'status' = 'status') {
+  soundManager.playNewOrderAlert()
+}

@@ -37,3 +37,11 @@ export function useValidateCouponMutation() {
     },
   })
 }
+
+export function useValidateCouponQuery(code: string | null, subtotal: number) {
+  return useQuery({
+    queryKey: ['coupon-validate', code, subtotal],
+    queryFn: () => validateCoupon(code!, subtotal),
+    enabled: Boolean(code && subtotal > 0),
+  })
+}

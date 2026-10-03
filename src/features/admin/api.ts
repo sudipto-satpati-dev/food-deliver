@@ -1,10 +1,20 @@
 import { supabase } from '@/lib/supabase'
-import { Settings, Category, MenuItem, ItemVariant, ItemAddon } from '@/types/database'
+import { Settings, Category, MenuItem, ItemVariant, ItemAddon, OrderStatus } from '@/types/database'
+import { OrderWithItems } from '@/features/orders/api'
 
 export interface MenuItemWithRelations extends MenuItem {
   categories?: Category
   item_variants?: ItemVariant[]
   item_addons?: ItemAddon[]
+}
+
+export interface RiderProfile {
+  id: string
+  full_name: string | null
+  phone: string | null
+  avatar_url: string | null
+  is_online: boolean
+  is_active: boolean
 }
 
 // ---------- SETTINGS ----------
@@ -122,7 +132,6 @@ export interface CreateMenuItemPayload {
 }
 
 export async function createMenuItem({ item, variants, addons }: CreateMenuItemPayload): Promise<MenuItem> {
-  // Insert Menu Item
   const { data: newItem, error: itemError } = await supabase
     .from('menu_items')
     .insert([item])
@@ -133,7 +142,6 @@ export async function createMenuItem({ item, variants, addons }: CreateMenuItemP
 
   const itemId = newItem.id
 
-  // Insert Variants if any
   if (variants.length > 0) {
     const variantsToInsert = variants.map((v, i) => ({
       item_id: itemId,
@@ -146,7 +154,6 @@ export async function createMenuItem({ item, variants, addons }: CreateMenuItemP
     if (vError) throw vError
   }
 
-  // Insert Addons if any
   if (addons.length > 0) {
     const addonsToInsert = addons.map((a, i) => ({
       item_id: itemId,
@@ -166,7 +173,6 @@ export async function updateMenuItem(
   id: string,
   { item, variants, addons }: Partial<CreateMenuItemPayload>
 ): Promise<void> {
-  // Update Item
   if (item) {
     const { error: itemError } = await supabase
       .from('menu_items')
@@ -175,7 +181,6 @@ export async function updateMenuItem(
     if (itemError) throw itemError
   }
 
-  // Replace Variants if provided
   if (variants !== undefined) {
     await supabase.from('item_variants').delete().eq('item_id', id)
     if (variants.length > 0) {
@@ -191,7 +196,6 @@ export async function updateMenuItem(
     }
   }
 
-  // Replace Addons if provided
   if (addons !== undefined) {
     await supabase.from('item_addons').delete().eq('item_id', id)
     if (addons.length > 0) {
@@ -215,4 +219,58 @@ export async function deleteMenuItem(id: string): Promise<void> {
     .eq('id', id)
 
   if (error) throw error
+}
+
+// ---------- ADMIN ORDERS & RIDERS ----------
+export async function fetchAdminOrders(): Promise<OrderWithItems[]> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*, order_items(*)')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return (data as OrderWithItems[]) || []
+}
+
+export async function fetchAdminRiders(): Promise<RiderProfile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, phone, avatar_url, is_online, is_active')
+    .eq('role', 'rider')
+    .eq('is_active', true)
+
+  if (error) throw error
+  return (data as RiderProfile[]) || []
+}
+
+export async function updateOrderStatus(
+  orderId: string,
+  status: OrderStatus,
+  reason?: string
+): Promise<void> {
+  const { error } = await supabase.rpc('update_order_status', {
+    p_order_id: orderId,
+    p_status: status,
+    p_reason: reason || undefined,
+  })
+
+  if (error) throw new Error(error.message)
+}
+
+export async function assignRiderToOrder(orderId: string, riderId: string): Promise<void> {
+  const { error } = await supabase.rpc('assign_rider', {
+    p_order_id: orderId,
+    p_rider_id: riderId,
+  })
+
+  if (error) throw new Error(error.message)
+}
+
+export async function adminMarkDelivered(orderId: string, reason?: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_mark_delivered', {
+    p_order_id: orderId,
+    p_reason: reason || 'Admin override',
+  })
+
+  if (error) throw new Error(error.message)
 }

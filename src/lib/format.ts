@@ -19,3 +19,5 @@ export function formatDate(dateString: string): string {
     timeStyle: 'short',
   }).format(date)
 }
+
+export const formatDateTime = formatDate

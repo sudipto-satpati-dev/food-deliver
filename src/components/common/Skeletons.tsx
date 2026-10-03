@@ -24,4 +24,14 @@ export const ListSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => {
   )
 }
 
+export const DetailSkeleton: React.FC = () => {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-10 w-2/3 bg-gray-200 rounded" />
+      <div className="h-32 w-full bg-gray-200 rounded-card" />
+      <div className="h-48 w-full bg-gray-200 rounded-card" />
+    </div>
+  )
+}
+
 export const Skeletons = ListSkeleton

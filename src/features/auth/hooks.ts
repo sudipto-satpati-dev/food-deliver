@@ -12,6 +12,7 @@ import {
   SignUpData,
 } from './api'
 import { toast } from 'sonner'
+export { useAuth } from '@/routes/guards'
 
 export function useLoginMutation() {
   return useMutation({

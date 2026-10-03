@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
 import {
   fetchSettings,
   updateSettings,
@@ -12,10 +14,16 @@ import {
   createMenuItem,
   updateMenuItem,
   deleteMenuItem,
+  fetchAdminOrders,
+  fetchAdminRiders,
+  updateOrderStatus,
+  assignRiderToOrder,
+  adminMarkDelivered,
   CreateMenuItemPayload,
 } from './api'
-import { Settings, Category } from '@/types/database'
+import { Settings, Category, OrderStatus } from '@/types/database'
 import { toast } from 'sonner'
+import { soundManager } from '@/lib/sound'
 
 // ---------- SETTINGS HOOKS ----------
 export function useSettingsQuery() {
@@ -111,7 +119,6 @@ export function useToggleItemAvailabilityMutation() {
     mutationFn: ({ id, is_available }: { id: string; is_available: boolean }) =>
       toggleMenuItemAvailability(id, is_available),
     onMutate: async ({ id, is_available }) => {
-      // Optimistic update
       await queryClient.cancelQueries({ queryKey: ['menu-items'] })
       const previousItems = queryClient.getQueryData(['menu-items'])
       queryClient.setQueryData(['menu-items'], (old: any) => {
@@ -171,6 +178,97 @@ export function useDeleteMenuItemMutation() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete menu item.')
+    },
+  })
+}
+
+// ---------- ADMIN ORDERS & REALTIME HOOKS ----------
+export function useAdminOrdersQuery() {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    // Admin Realtime channel listening to ALL order changes
+    const channel = supabase
+      .channel('admin-all-orders')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+        },
+        (payload) => {
+          queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
+
+          if (payload.eventType === 'INSERT') {
+            soundManager.playNewOrderAlert()
+            toast.success(`🚨 NEW ORDER #${(payload.new as any).order_no} RECEIVED!`, {
+              duration: 8000,
+            })
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [queryClient])
+
+  return useQuery({
+    queryKey: ['admin-orders'],
+    queryFn: fetchAdminOrders,
+  })
+}
+
+export function useAdminRidersQuery() {
+  return useQuery({
+    queryKey: ['admin-riders'],
+    queryFn: fetchAdminRiders,
+  })
+}
+
+export function useUpdateOrderStatusMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ orderId, status, reason }: { orderId: string; status: OrderStatus; reason?: string }) =>
+      updateOrderStatus(orderId, status, reason),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
+      toast.success(`Order status updated to ${variables.status.replace(/_/g, ' ')}`)
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update status.')
+    },
+  })
+}
+
+export function useAssignRiderMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ orderId, riderId }: { orderId: string; riderId: string }) =>
+      assignRiderToOrder(orderId, riderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
+      toast.success('Rider assigned to order!')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to assign rider.')
+    },
+  })
+}
+
+export function useAdminMarkDeliveredMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ orderId, reason }: { orderId: string; reason?: string }) =>
+      adminMarkDelivered(orderId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
+      toast.success('Order marked as delivered (Admin Override)!')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to mark as delivered.')
     },
   })
 }
