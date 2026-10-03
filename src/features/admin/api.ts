@@ -237,10 +237,62 @@ export async function fetchAdminRiders(): Promise<RiderProfile[]> {
     .from('profiles')
     .select('id, full_name, phone, avatar_url, is_online, is_active')
     .eq('role', 'rider')
-    .eq('is_active', true)
 
   if (error) throw error
   return (data as RiderProfile[]) || []
+}
+
+export async function toggleRiderActiveStatus(riderId: string, isActive: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ is_active: isActive })
+    .eq('id', riderId)
+
+  if (error) throw error
+}
+
+export async function createRiderAccount(payload: {
+  full_name: string
+  phone: string
+  email: string
+  password: string
+}): Promise<void> {
+  try {
+    const { data, error } = await supabase.functions.invoke('admin-create-rider', {
+      body: payload,
+    })
+
+    if (error || !data) {
+      // Fallback: Use standard signup & profile update for dev environment
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: payload.email,
+        password: payload.password,
+        options: {
+          data: {
+            full_name: payload.full_name,
+            phone: payload.phone,
+            role: 'rider',
+          },
+        },
+      })
+
+      if (signUpError) throw signUpError
+
+      if (authData.user) {
+        await supabase
+          .from('profiles')
+          .update({
+            full_name: payload.full_name,
+            phone: payload.phone,
+            role: 'rider',
+            is_active: true,
+          })
+          .eq('id', authData.user.id)
+      }
+    }
+  } catch (err: any) {
+    throw new Error(err.message || 'Failed to create rider account.')
+  }
 }
 
 export async function updateOrderStatus(

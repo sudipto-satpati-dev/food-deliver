@@ -130,6 +130,20 @@ export const RiderOrderDetailPage: React.FC = () => {
             {addressObj.landmark && (
               <p className="text-brand-muted italic">Landmark: {addressObj.landmark}</p>
             )}
+            <div className="pt-1.5 border-t border-brand-border/40 flex items-center justify-between">
+              <span className="text-[11px] text-brand-muted font-semibold">
+                Distance: {order.distance_km} km
+              </span>
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${order.delivery_lat},${order.delivery_lng}`}
+                target="_blank"
+                rel="noreferrer"
+                className="font-bold text-brand-primary hover:underline flex items-center gap-1 text-[11px]"
+              >
+                <span>Navigate in Google Maps</span>
+                <span>↗</span>
+              </a>
+            </div>
           </div>
         )}
       </div>

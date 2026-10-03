@@ -220,9 +220,20 @@ export const RiderHomePage: React.FC = () => {
                           Landmark: {addressObj.landmark}
                         </p>
                       )}
-                      <p className="text-brand-muted font-medium">
-                        Distance: {order.distance_km} km from restaurant
-                      </p>
+                      <div className="flex items-center justify-between pt-1 border-t border-brand-border/40 mt-1">
+                        <span className="text-brand-muted font-medium">
+                          Distance: {order.distance_km} km
+                        </span>
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${order.delivery_lat},${order.delivery_lng}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-bold text-brand-primary hover:underline flex items-center gap-1"
+                        >
+                          <span>Open Maps</span>
+                          <span>↗</span>
+                        </a>
+                      </div>
                     </div>
                   )}
                 </div>

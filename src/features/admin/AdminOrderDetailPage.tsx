@@ -244,20 +244,41 @@ export const AdminOrderDetailPage: React.FC = () => {
                 <User className="w-3.5 h-3.5 text-brand-muted" />
                 {order.customer_name}
               </p>
-              <a
-                href={`tel:${order.customer_phone}`}
-                className="flex items-center gap-1.5 text-brand-primary font-bold hover:underline"
-              >
-                <Phone className="w-3.5 h-3.5" />
-                {order.customer_phone}
-              </a>
+              <div className="flex items-center gap-3">
+                <a
+                  href={`tel:${order.customer_phone}`}
+                  className="flex items-center gap-1.5 text-brand-primary font-bold hover:underline"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  {order.customer_phone}
+                </a>
+                <a
+                  href={`https://wa.me/91${order.customer_phone}?text=${encodeURIComponent('Hello! Update regarding your Dinning Zone order #' + order.order_no)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] font-bold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded hover:bg-emerald-200 transition-colors"
+                >
+                  WhatsApp Chat 💬
+                </a>
+              </div>
               {addressObj && (
-                <p className="flex items-start gap-1.5 text-brand-muted pt-1 border-t border-brand-border/40">
-                  <MapPin className="w-3.5 h-3.5 text-brand-muted shrink-0 mt-0.5" />
-                  <span>
-                    {addressObj.label}: {addressObj.line1} ({order.distance_km} km)
-                  </span>
-                </p>
+                <div className="pt-1 border-t border-brand-border/40 space-y-1">
+                  <p className="flex items-start gap-1.5 text-brand-muted">
+                    <MapPin className="w-3.5 h-3.5 text-brand-muted shrink-0 mt-0.5" />
+                    <span>
+                      {addressObj.label}: {addressObj.line1} ({order.distance_km} km)
+                    </span>
+                  </p>
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${order.delivery_lat},${order.delivery_lng}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-primary hover:underline pt-0.5"
+                  >
+                    <span>Open in Google Maps</span>
+                    <span>↗</span>
+                  </a>
+                </div>
               )}
             </div>
           </div>

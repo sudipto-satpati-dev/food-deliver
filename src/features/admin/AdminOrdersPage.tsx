@@ -222,22 +222,42 @@ export const AdminOrdersPage: React.FC = () => {
                       <User className="w-3.5 h-3.5 text-brand-muted" />
                       {order.customer_name}
                     </span>
-                    <a
-                      href={`tel:${order.customer_phone}`}
-                      className="flex items-center gap-1 text-brand-primary font-bold hover:underline"
-                    >
-                      <Phone className="w-3.5 h-3.5" />
-                      {order.customer_phone}
-                    </a>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`https://wa.me/91${order.customer_phone}?text=${encodeURIComponent('Hello! Update regarding your Dinning Zone order #' + order.order_no)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded hover:bg-emerald-200 transition-colors"
+                      >
+                        WhatsApp
+                      </a>
+                      <a
+                        href={`tel:${order.customer_phone}`}
+                        className="flex items-center gap-1 text-brand-primary font-bold hover:underline"
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        {order.customer_phone}
+                      </a>
+                    </div>
                   </div>
 
                   {addressObj && (
-                    <p className="text-[11px] text-brand-muted flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-brand-muted shrink-0" />
-                      <span className="truncate">
-                        {addressObj.line1} ({order.distance_km} km away)
-                      </span>
-                    </p>
+                    <div className="flex items-center justify-between text-[11px] text-brand-muted">
+                      <p className="flex items-center gap-1 truncate">
+                        <MapPin className="w-3.5 h-3.5 text-brand-muted shrink-0" />
+                        <span className="truncate">
+                          {addressObj.line1} ({order.distance_km} km)
+                        </span>
+                      </p>
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${order.delivery_lat},${order.delivery_lng}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] font-bold text-brand-primary hover:underline shrink-0 ml-2"
+                      >
+                        Open Maps ↗
+                      </a>
+                    </div>
                   )}
                 </div>
 

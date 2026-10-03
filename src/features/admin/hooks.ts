@@ -16,6 +16,8 @@ import {
   deleteMenuItem,
   fetchAdminOrders,
   fetchAdminRiders,
+  toggleRiderActiveStatus,
+  createRiderAccount,
   updateOrderStatus,
   assignRiderToOrder,
   adminMarkDelivered,
@@ -187,7 +189,6 @@ export function useAdminOrdersQuery() {
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    // Admin Realtime channel listening to ALL order changes
     const channel = supabase
       .channel('admin-all-orders')
       .on(
@@ -225,6 +226,36 @@ export function useAdminRidersQuery() {
   return useQuery({
     queryKey: ['admin-riders'],
     queryFn: fetchAdminRiders,
+  })
+}
+
+export function useToggleRiderActiveMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ riderId, isActive }: { riderId: string; isActive: boolean }) =>
+      toggleRiderActiveStatus(riderId, isActive),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-riders'] })
+      toast.success(`Rider status updated: ${variables.isActive ? 'Active' : 'Inactive'}`)
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update rider status.')
+    },
+  })
+}
+
+export function useCreateRiderMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: { full_name: string; phone: string; email: string; password: string }) =>
+      createRiderAccount(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-riders'] })
+      toast.success('New delivery rider account created!')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to create rider account.')
+    },
   })
 }
 
