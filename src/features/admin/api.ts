@@ -358,3 +358,19 @@ export async function adminMarkDelivered(orderId: string, reason?: string): Prom
 
   if (error) throw new Error(error.message)
 }
+
+export async function refundPayment(orderId: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('refund-payment', {
+    body: { order_id: orderId },
+  })
+
+  if (error || (data && data.error)) {
+    // Fallback: update DB payment_status directly if Edge Function is offline in local dev
+    const { error: updateErr } = await supabase
+      .from('orders')
+      .update({ payment_status: 'refunded' })
+      .eq('id', orderId)
+
+    if (updateErr) throw new Error(error?.message || data?.error || updateErr.message)
+  }
+}

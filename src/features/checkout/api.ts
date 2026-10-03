@@ -43,12 +43,12 @@ export async function createRazorpayOrder(orderId: string): Promise<{
   key_id: string
 }> {
   try {
-    const { data, error } = await supabase.functions.invoke('razorpay-create-order', {
+    const { data, error } = await supabase.functions.invoke('create-razorpay-order', {
       body: { order_id: orderId },
     })
 
     if (error || !data) {
-      console.warn('Edge function not reachable, using direct order details:', error?.message)
+      console.warn('Edge function create-razorpay-order error, using fallback:', error?.message)
       return {
         razorpay_order_id: `order_dev_${Date.now()}`,
         amount: 0,
@@ -72,12 +72,12 @@ export async function verifyRazorpayPayment(payload: {
   order_id: string
 }): Promise<{ success: boolean }> {
   try {
-    const { data, error } = await supabase.functions.invoke('razorpay-verify', {
+    const { data, error } = await supabase.functions.invoke('verify-razorpay-payment', {
       body: payload,
     })
 
     if (error || !data) {
-      // Direct update fallback in dev mode
+      // Direct update fallback in dev mode if Edge Function isn't running
       await supabase
         .from('orders')
         .update({ payment_status: 'paid', status: 'placed' })

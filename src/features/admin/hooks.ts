@@ -21,6 +21,7 @@ import {
   updateOrderStatus,
   assignRiderToOrder,
   adminMarkDelivered,
+  refundPayment,
   CreateMenuItemPayload,
 } from './api'
 import { Settings, Category, OrderStatus } from '@/types/database'
@@ -300,6 +301,20 @@ export function useAdminMarkDeliveredMutation() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to mark as delivered.')
+    },
+  })
+}
+
+export function useRefundPaymentMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (orderId: string) => refundPayment(orderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
+      toast.success('Payment refund initiated successfully!')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Refund processing failed.')
     },
   })
 }

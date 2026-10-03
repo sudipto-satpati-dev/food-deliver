@@ -11,6 +11,7 @@ import {
   useVerifyRazorpayPaymentMutation,
 } from './hooks'
 import { calculateHaversineDistanceKm } from '@/lib/geo'
+import { loadRazorpayScript } from '@/lib/razorpay'
 import { Price } from '@/components/common/Price'
 import {
   MapPin,
@@ -29,11 +30,6 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
-declare global {
-  interface Window {
-    Razorpay: any
-  }
-}
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate()
@@ -187,6 +183,7 @@ export const CheckoutPage: React.FC = () => {
   const handleRazorpayPayment = async (orderId: string, amount: number, orderNo: number) => {
     try {
       const rzpData = await createRzpMutation.mutateAsync(orderId)
+      const hasScript = await loadRazorpayScript()
 
       const options = {
         key: rzpData.key_id,
@@ -211,36 +208,36 @@ export const CheckoutPage: React.FC = () => {
               razorpay_signature: response.razorpay_signature || 'mock_sig',
               order_id: orderId,
             })
-            navigate(`/orders/${orderId}`)
+            navigate(`/payment-result?order_id=${orderId}&status=success`)
           } catch {
-            navigate(`/orders/${orderId}`)
+            navigate(`/payment-result?order_id=${orderId}&status=failed`)
           }
         },
         modal: {
           ondismiss: function () {
-            toast.info('Payment cancelled. Your order is pending payment in Orders section.')
-            navigate(`/orders/${orderId}`)
+            toast.info('Payment window closed. Order saved as pending payment.')
+            navigate(`/payment-result?order_id=${orderId}&status=failed`)
           },
         },
       }
 
-      if (window.Razorpay) {
+      if (hasScript && window.Razorpay) {
         const rzp = new window.Razorpay(options)
         rzp.open()
       } else {
-        // Mock fallback if script didn't load or adblocker blocked
-        toast.success('Simulating successful payment...')
+        // Fallback for local development if Razorpay script is blocked or offline
+        toast.info('Simulating payment completion (Dev mode)...')
         await verifyRzpMutation.mutateAsync({
           razorpay_order_id: rzpData.razorpay_order_id,
           razorpay_payment_id: `pay_mock_${Date.now()}`,
           razorpay_signature: 'mock_sig',
           order_id: orderId,
         })
-        navigate(`/orders/${orderId}`)
+        navigate(`/payment-result?order_id=${orderId}&status=success`)
       }
     } catch (err: any) {
-      toast.error('Could not launch payment gateway. Redirecting to order details...')
-      navigate(`/orders/${orderId}`)
+      toast.error('Could not launch payment gateway. Redirecting to order...')
+      navigate(`/payment-result?order_id=${orderId}&status=failed`)
     }
   }
 
@@ -506,7 +503,7 @@ export const CheckoutPage: React.FC = () => {
       </div>
 
       {/* Floating Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-3 bg-white border-t border-brand-border shadow-float z-30">
+      <div className="fixed bottom-[56px] left-0 right-0 p-3.5 bg-white border-t border-brand-border shadow-float z-50">
         <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
           <div>
             <span className="text-[10px] text-brand-muted block uppercase font-bold">

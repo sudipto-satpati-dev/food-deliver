@@ -17,8 +17,6 @@ import {
   Clock,
   MapPin,
   Phone,
-  User,
-  ShieldCheck,
   CheckCircle2,
   AlertTriangle,
   XCircle,
@@ -27,9 +25,14 @@ import {
   HelpCircle,
   RotateCcw,
   Star,
+  CreditCard,
+  Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCartStore } from '@/stores/cart'
+import { useCreateRazorpayOrderMutation, useVerifyRazorpayPaymentMutation } from '@/features/checkout/hooks'
+import { loadRazorpayScript } from '@/lib/razorpay'
+import { useAuth } from '@/features/auth/hooks'
 
 export const OrderDetailPage: React.FC = () => {
   const { id: orderId } = useParams<{ id: string }>()
@@ -120,6 +123,65 @@ export const OrderDetailPage: React.FC = () => {
     navigate('/cart')
   }
 
+  const { user } = useAuth()
+  const createRzpMutation = useCreateRazorpayOrderMutation()
+  const verifyRzpMutation = useVerifyRazorpayPaymentMutation()
+
+  const handlePayNow = async () => {
+    if (!order || !user) return
+    try {
+      const rzpData = await createRzpMutation.mutateAsync(order.id)
+      const hasScript = await loadRazorpayScript()
+
+      const options = {
+        key: rzpData.key_id,
+        amount: Math.round(Number(order.total) * 100),
+        currency: 'INR',
+        name: settings?.restaurant_name || 'Dinning Zone',
+        description: `Order #${order.order_no} Payment`,
+        order_id: rzpData.razorpay_order_id?.startsWith('order_dev') ? undefined : rzpData.razorpay_order_id,
+        prefill: {
+          name: order.customer_name || user.email,
+          contact: order.customer_phone || '',
+          email: user.email,
+        },
+        theme: { color: '#D94F30' },
+        handler: async function (response: any) {
+          await verifyRzpMutation.mutateAsync({
+            razorpay_order_id: response.razorpay_order_id || rzpData.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature || 'mock_sig',
+            order_id: order.id,
+          })
+          refetch()
+          toast.success('Payment verified successfully!')
+        },
+        modal: {
+          ondismiss: function () {
+            toast.info('Payment window closed.')
+          },
+        },
+      }
+
+      if (hasScript && window.Razorpay) {
+        const rzp = new window.Razorpay(options)
+        rzp.open()
+      } else {
+        toast.info('Simulating payment completion (Dev mode)...')
+        await verifyRzpMutation.mutateAsync({
+          razorpay_order_id: rzpData.razorpay_order_id,
+          razorpay_payment_id: `pay_mock_${Date.now()}`,
+          razorpay_signature: 'mock_sig',
+          order_id: order.id,
+        })
+        refetch()
+        toast.success('Payment completed!')
+      }
+    } catch (err: any) {
+      toast.error('Could not open payment gateway.')
+    }
+  }
+
   return (
     <div className="space-y-5 pb-12 max-w-xl mx-auto">
       {/* Header */}
@@ -145,6 +207,33 @@ export const OrderDetailPage: React.FC = () => {
 
         <StatusBadge status={order.status} />
       </div>
+
+      {/* Pending Payment Pay Now Banner */}
+      {order.status === 'pending_payment' && order.payment_method === 'online' && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-card flex items-center justify-between gap-3 text-xs">
+          <div>
+            <p className="font-bold text-amber-900 text-sm flex items-center gap-1.5">
+              <CreditCard className="w-4 h-4 text-amber-600" />
+              Payment Pending
+            </p>
+            <p className="text-amber-700 mt-0.5">
+              Complete your online payment to send order to the kitchen.
+            </p>
+          </div>
+          <button
+            onClick={handlePayNow}
+            disabled={createRzpMutation.isPending || verifyRzpMutation.isPending}
+            className="px-4 py-2 bg-brand-primary text-white text-xs font-bold rounded-btn shadow-soft hover:bg-brand-primary/95 transition-all shrink-0 flex items-center gap-1"
+          >
+            {createRzpMutation.isPending || verifyRzpMutation.isPending ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <CreditCard className="w-3.5 h-3.5" />
+            )}
+            <span>Pay Now</span>
+          </button>
+        </div>
+      )}
 
       {/* Cancelled / Rejected Warning Banner */}
       {isCancelledOrRejected && (

@@ -6,6 +6,7 @@ import {
   useUpdateOrderStatusMutation,
   useAssignRiderMutation,
   useAdminMarkDeliveredMutation,
+  useRefundPaymentMutation,
 } from './hooks'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { Price } from '@/components/common/Price'
@@ -21,7 +22,10 @@ import {
   Clock,
   Bike,
   ShieldAlert,
+  RotateCcw,
+  Loader2,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export const AdminOrderDetailPage: React.FC = () => {
   const { id: orderId } = useParams<{ id: string }>()
@@ -33,6 +37,7 @@ export const AdminOrderDetailPage: React.FC = () => {
   const updateStatusMutation = useUpdateOrderStatusMutation()
   const assignRiderMutation = useAssignRiderMutation()
   const adminMarkDeliveredMutation = useAdminMarkDeliveredMutation()
+  const refundMutation = useRefundPaymentMutation()
 
   const order = orders?.find((o) => o.id === orderId)
 
@@ -228,6 +233,28 @@ export const AdminOrderDetailPage: React.FC = () => {
                 <span>Admin Override Delivered</span>
               </button>
             )}
+
+            {/* Refund Online Payment Action */}
+            {['cancelled', 'rejected'].includes(order.status) &&
+              order.payment_status === 'paid' &&
+              order.payment_method === 'online' && (
+                <button
+                  onClick={() => {
+                    if (confirm(`Initiate Razorpay refund for Order #${order.order_no}?`)) {
+                      refundMutation.mutate(order.id)
+                    }
+                  }}
+                  disabled={refundMutation.isPending}
+                  className="w-full mt-2 py-2 px-3 border border-rose-200 bg-rose-50 text-rose-800 text-xs font-bold rounded-btn hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  {refundMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-rose-600" />
+                  ) : (
+                    <RotateCcw className="w-4 h-4 text-rose-600" />
+                  )}
+                  <span>Refund Online Payment (₹{order.total})</span>
+                </button>
+              )}
           </div>
 
           {/* Customer Info */}
