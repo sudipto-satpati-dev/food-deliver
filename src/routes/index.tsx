@@ -23,6 +23,7 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { SignUpPage } from '@/features/auth/SignUpPage'
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
+import { VerifyEmailPage } from '@/features/auth/VerifyEmailPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
 // Lazy-loaded Admin pages
@@ -73,6 +74,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="signup" element={<SignUpPage />} />
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
+        <Route path="verify-email" element={<VerifyEmailPage />} />
       </Route>
 
       {/* Admin Panel Routes (Lazy-loaded with Admin Role guard) */}

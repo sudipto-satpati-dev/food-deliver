@@ -27,6 +27,7 @@ export async function signUpWithEmail({ email, password, fullName, phone }: Sign
     email,
     password,
     options: {
+      emailRedirectTo: `${window.location.origin}/verify-email`,
       data: {
         full_name: fullName,
         phone: phone,

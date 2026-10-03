@@ -62,7 +62,11 @@ export const SignUpPage: React.FC = () => {
         phone: values.phone,
       })
 
-      if (res) {
+      if (res?.session) {
+        // Email confirmation is disabled; user is immediately logged in
+        navigate('/', { replace: true })
+      } else if (res?.user) {
+        // Email confirmation is enabled
         setRegisteredEmail(values.email)
         setIsSuccess(true)
       }
