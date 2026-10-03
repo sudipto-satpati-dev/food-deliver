@@ -23,3 +23,5 @@ export const ListSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => {
     </div>
   )
 }
+
+export const Skeletons = ListSkeleton
