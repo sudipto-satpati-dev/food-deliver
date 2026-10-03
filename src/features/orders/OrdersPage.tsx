@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/hooks'
 import { useUserOrders, useCancelOrderMutation } from './hooks'
-import { OrderWithItems } from './api'
+import { OrderWithItems, OrderItemRow } from './api'
 import { useCartStore } from '@/stores/cart'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { Price } from '@/components/common/Price'
@@ -91,7 +91,7 @@ export const OrdersPage: React.FC = () => {
   const handleReorder = (order: OrderWithItems) => {
     if (!order.order_items || order.order_items.length === 0) return
     clearCart()
-    order.order_items.forEach((item) => {
+    order.order_items.forEach((item: OrderItemRow) => {
       addItem({
         itemId: item.item_id || '',
         name: item.name,

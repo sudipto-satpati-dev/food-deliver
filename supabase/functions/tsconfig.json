@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "lib": ["esnext"],
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "exclude": ["node_modules"]
+}

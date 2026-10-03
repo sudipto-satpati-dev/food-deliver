@@ -272,8 +272,8 @@ export async function createRiderAccount(payload: {
     // Create an isolated temporary Supabase client with persistSession: false
     // so that Admin's active session in localStorage is 100% untouched!
     const tempClient = createClient(
-      (import.meta as any).env.VITE_SUPABASE_URL,
-      (import.meta as any).env.VITE_SUPABASE_ANON_KEY,
+      import.meta.env.VITE_SUPABASE_URL,
+      import.meta.env.VITE_SUPABASE_ANON_KEY,
       {
         auth: {
           persistSession: false,
