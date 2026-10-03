@@ -95,7 +95,7 @@ export const AdminOrderDetailPage: React.FC = () => {
             </h1>
             <p className="text-xs text-brand-muted flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {formatDateTime(order.created_at)}
+              {formatDateTime(order.placed_at)}
             </p>
           </div>
         </div>

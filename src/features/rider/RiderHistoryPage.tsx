@@ -118,7 +118,7 @@ export const RiderHistoryPage: React.FC = () => {
                   )}
                   <p className="text-brand-muted flex items-center gap-1 text-[11px]">
                     <Clock className="w-3.5 h-3.5 text-brand-muted shrink-0" />
-                    <span>{formatDateTime(order.created_at)}</span>
+                    <span>{formatDateTime(order.placed_at)}</span>
                   </p>
                 </div>
 

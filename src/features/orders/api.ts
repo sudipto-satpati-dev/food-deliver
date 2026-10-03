@@ -20,7 +20,7 @@ export async function fetchUserOrders(userId: string): Promise<OrderWithItems[]>
     .from('orders')
     .select('*, order_items(*)')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+    .order('placed_at', { ascending: false })
 
   if (error) throw new Error(error.message)
   return (data as OrderWithItems[]) || []

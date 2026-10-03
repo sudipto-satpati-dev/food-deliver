@@ -23,7 +23,7 @@ export const DashboardPage: React.FC = () => {
 
   // Calculate metrics
   const todayStr = new Date().toISOString().split('T')[0]
-  const todayOrders = (orders || []).filter((o) => o.created_at.startsWith(todayStr))
+  const todayOrders = (orders || []).filter((o) => o.placed_at?.startsWith(todayStr))
   const todayRevenue = todayOrders
     .filter((o) => o.status !== 'cancelled' && o.status !== 'rejected')
     .reduce((sum, o) => sum + o.total, 0)

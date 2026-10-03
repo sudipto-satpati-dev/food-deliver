@@ -6,7 +6,7 @@ export async function fetchRiderOrders(riderId: string): Promise<OrderWithItems[
     .from('orders')
     .select('*, order_items(*)')
     .eq('rider_id', riderId)
-    .order('created_at', { ascending: false })
+    .order('placed_at', { ascending: false })
 
   if (error) throw error
   return (data as OrderWithItems[]) || []
