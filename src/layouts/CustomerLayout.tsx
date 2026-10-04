@@ -5,14 +5,24 @@ import { BRAND_CONFIG } from '@/config/brand'
 import { useCartStore } from '@/stores/cart'
 import { Price } from '@/components/common/Price'
 import { ConfirmModal } from '@/components/common/ConfirmModal'
+import { useAuth } from '@/routes/guards'
 
 export const CustomerLayout: React.FC = () => {
+  const { user, profile } = useAuth()
   const itemCount = useCartStore((state) => state.getItemCount())
   const subtotal = useCartStore((state) => state.getSubtotal())
   const clearCart = useCartStore((state) => state.clearCart)
   const location = useLocation()
 
   const [isClearModalOpen, setIsClearModalOpen] = useState(false)
+
+  // User avatar image or fallback initial
+  const avatarUrl = profile?.full_name ? null : user?.user_metadata?.avatar_url
+  const initialLetter = profile?.full_name
+    ? profile.full_name[0].toUpperCase()
+    : user?.email
+    ? user.email[0].toUpperCase()
+    : 'U'
 
   // Hide top header & bottom nav on standalone auth/welcome pages
   const isStandalonePage = [
@@ -70,6 +80,20 @@ export const CustomerLayout: React.FC = () => {
               <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-brand-primary text-white text-[10px] font-extrabold rounded-full flex items-center justify-center border border-white shadow-subtle">
                 {itemCount > 9 ? '9+' : itemCount}
               </span>
+            )}
+          </NavLink>
+
+          {/* User Profile Avatar Circle */}
+          <NavLink
+            to="/profile"
+            className="ml-1 flex items-center justify-center w-8 h-8 rounded-full bg-brand-primary/10 text-brand-primary border border-brand-primary/25 hover:bg-brand-primary hover:text-white transition-all shadow-subtle overflow-hidden shrink-0"
+            aria-label="User Profile"
+            title="User Profile"
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="User Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-xs font-extrabold">{initialLetter}</span>
             )}
           </NavLink>
         </div>
