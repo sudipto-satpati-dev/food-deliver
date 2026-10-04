@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { CustomerLayout } from '@/layouts/CustomerLayout'
 import { AdminLayout } from '@/layouts/AdminLayout'
 import { RiderLayout } from '@/layouts/RiderLayout'
@@ -24,7 +24,10 @@ import { SignUpPage } from '@/features/auth/SignUpPage'
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { VerifyEmailPage } from '@/features/auth/VerifyEmailPage'
+import { WelcomePage } from '@/features/auth/WelcomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+
+import { useAuth } from '@/routes/guards'
 
 // Lazy-loaded Admin pages
 const AdminDashboardPage = lazy(() => import('@/features/admin/DashboardPage').then(m => ({ default: m.DashboardPage })))
@@ -51,12 +54,27 @@ const LoadingSpinner = () => (
   </div>
 )
 
+const RootLanding: React.FC = () => {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return <LoadingSpinner />
+  }
+
+  if (!user) {
+    return <Navigate to="/welcome" replace />
+  }
+
+  return <HomePage />
+}
+
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
       {/* Customer Routes */}
       <Route path="/" element={<CustomerLayout />}>
-        <Route index element={<HomePage />} />
+        <Route index element={<RootLanding />} />
+        <Route path="welcome" element={<WelcomePage />} />
         <Route path="menu" element={<MenuPage />} />
         <Route path="search" element={<SearchPage />} />
         <Route path="cart" element={<CartPage />} />

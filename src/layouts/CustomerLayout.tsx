@@ -10,8 +10,26 @@ export const CustomerLayout: React.FC = () => {
   const subtotal = useCartStore((state) => state.getSubtotal())
   const location = useLocation()
 
+  // Hide top header & bottom nav on standalone auth/welcome pages
+  const isStandalonePage = [
+    '/welcome',
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/reset-password',
+    '/verify-email',
+  ].includes(location.pathname)
+
   // Hide sticky bottom cart bar on cart/checkout pages
   const isCartPage = location.pathname === '/cart' || location.pathname === '/checkout'
+
+  if (isStandalonePage) {
+    return (
+      <div className="min-h-screen bg-[#fcf9f8] font-body text-brand-text">
+        <Outlet />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-brand-bg flex flex-col pb-20 font-body text-brand-text">
@@ -21,9 +39,17 @@ export const CustomerLayout: React.FC = () => {
           <img src={BRAND_CONFIG.logos.main} alt={BRAND_CONFIG.name} className="h-8 object-contain" />
         </NavLink>
         <div className="flex items-center gap-3">
-          <NavLink to="/search" className="p-2 text-brand-muted hover:text-brand-primary rounded-full hover:bg-brand-bg transition-colors">
+          <NavLink
+            to="/search"
+            className="p-2 text-brand-muted hover:text-brand-primary rounded-full hover:bg-brand-bg transition-colors"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           </NavLink>
         </div>
@@ -42,7 +68,9 @@ export const CustomerLayout: React.FC = () => {
             className="pointer-events-auto flex items-center justify-between bg-brand-primary text-white p-3.5 rounded-btn shadow-float hover:bg-brand-dark transition-all transform active:scale-95"
           >
             <div className="flex items-center gap-2 text-sm font-medium">
-              <span className="bg-white/20 px-2.5 py-0.5 rounded-full font-bold">{itemCount} {itemCount === 1 ? 'item' : 'items'}</span>
+              <span className="bg-white/20 px-2.5 py-0.5 rounded-full font-bold">
+                {itemCount} {itemCount === 1 ? 'item' : 'items'}
+              </span>
               <span>View cart</span>
             </div>
             <Price amount={subtotal} className="text-white text-base font-bold" />
