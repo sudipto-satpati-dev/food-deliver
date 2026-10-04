@@ -161,6 +161,8 @@ export const MenuPage: React.FC = () => {
                     <img
                       src={item.image_url || '/banners/default-food-placeholder.webp'}
                       alt={item.name}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover"
                     />
                     {!item.is_available ? (

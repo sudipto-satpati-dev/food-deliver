@@ -4,6 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/routes/guards'
 import { AppRoutes } from '@/routes/index'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary'
+import { OfflineBanner } from '@/components/common/OfflineBanner'
+import { PwaInstallBanner } from '@/components/common/PwaInstallBanner'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,14 +20,18 @@ const queryClient = new QueryClient({
 
 export const App: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-          <Toaster position="top-center" richColors closeButton />
-        </BrowserRouter>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <BrowserRouter>
+            <OfflineBanner />
+            <AppRoutes />
+            <PwaInstallBanner />
+            <Toaster position="top-center" richColors closeButton />
+          </BrowserRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   )
 }
 

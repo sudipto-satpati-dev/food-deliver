@@ -157,6 +157,8 @@ export const HomePage: React.FC = () => {
                   <img
                     src={item.image_url || '/banners/default-food-placeholder.webp'}
                     alt={item.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-2 left-2">
@@ -219,6 +221,8 @@ export const HomePage: React.FC = () => {
                   <img
                     src={item.image_url || '/banners/default-food-placeholder.webp'}
                     alt={item.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                   <button
