@@ -607,10 +607,18 @@ export interface Database {
       }
       admin_sales_summary: {
         Args: {
-          p_from: string
-          p_to: string
+          from_date?: string
+          to_date?: string
         }
-        Returns: { day: string; orders_count: number; revenue: number }[]
+        Returns: {
+          sales_date: string
+          order_count: number
+          delivered_count: number
+          cancelled_count: number
+          total_revenue: number
+          online_revenue: number
+          cod_revenue: number
+        }[]
       }
     }
   }

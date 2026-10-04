@@ -475,3 +475,152 @@ export async function replyToReview(reviewId: string, reply: string): Promise<vo
 
   if (error) throw new Error(error.message || 'Failed to update review reply')
 }
+
+// ---------- SALES SUMMARY & REPORTS ----------
+export interface SalesSummaryItem {
+  sales_date: string
+  order_count: number
+  delivered_count: number
+  cancelled_count: number
+  total_revenue: number
+  online_revenue: number
+  cod_revenue: number
+}
+
+export async function fetchSalesSummary(fromDate?: string, toDate?: string): Promise<SalesSummaryItem[]> {
+  try {
+    const { data, error } = await supabase.rpc('admin_sales_summary', {
+      from_date: fromDate,
+      to_date: toDate,
+    })
+
+    if (!error && Array.isArray(data)) {
+      return data.map((row) => ({
+        sales_date: row.sales_date,
+        order_count: Number(row.order_count || 0),
+        delivered_count: Number(row.delivered_count || 0),
+        cancelled_count: Number(row.cancelled_count || 0),
+        total_revenue: Number(row.total_revenue || 0),
+        online_revenue: Number(row.online_revenue || 0),
+        cod_revenue: Number(row.cod_revenue || 0),
+      }))
+    }
+  } catch (e) {
+    console.warn('RPC admin_sales_summary failed, using fallback aggregation:', e)
+  }
+
+  // Fallback: calculate sales summary from orders table directly
+  const { data: orders, error: ordersErr } = await supabase
+    .from('orders')
+    .select('*')
+    .order('placed_at', { ascending: true })
+
+  if (ordersErr) throw ordersErr
+
+  const startStr = fromDate || new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
+  const endStr = toDate || new Date().toISOString().split('T')[0]
+
+  const daysMap: Record<string, SalesSummaryItem> = {}
+  const curr = new Date(startStr)
+  const end = new Date(endStr)
+
+  while (curr <= end) {
+    const dateStr = curr.toISOString().split('T')[0]
+    daysMap[dateStr] = {
+      sales_date: dateStr,
+      order_count: 0,
+      delivered_count: 0,
+      cancelled_count: 0,
+      total_revenue: 0,
+      online_revenue: 0,
+      cod_revenue: 0,
+    }
+    curr.setDate(curr.getDate() + 1)
+  }
+
+  ;(orders || []).forEach((o) => {
+    const dateStr = o.placed_at.split('T')[0]
+    if (daysMap[dateStr]) {
+      daysMap[dateStr].order_count += 1
+      if (o.status === 'delivered') {
+        daysMap[dateStr].delivered_count += 1
+        const rev = Number(o.total || 0)
+        daysMap[dateStr].total_revenue += rev
+        if (o.payment_method === 'online') {
+          daysMap[dateStr].online_revenue += rev
+        } else {
+          daysMap[dateStr].cod_revenue += rev
+        }
+      } else if (o.status === 'cancelled' || o.status === 'rejected') {
+        daysMap[dateStr].cancelled_count += 1
+      }
+    }
+  })
+
+  return Object.values(daysMap)
+}
+
+export interface TopSellingItem {
+  item_name: string
+  quantity_sold: number
+  total_revenue: number
+}
+
+export async function fetchTopSellingItems(limit = 5, fromDate?: string, toDate?: string): Promise<TopSellingItem[]> {
+  try {
+    let query = supabase
+      .from('order_items')
+      .select('item_name, quantity, price, order_id, orders!inner(status, placed_at)')
+      .eq('orders.status', 'delivered')
+
+    if (fromDate) {
+      query = query.gte('orders.placed_at', `${fromDate}T00:00:00`)
+    }
+    if (toDate) {
+      query = query.lte('orders.placed_at', `${toDate}T23:59:59`)
+    }
+
+    const { data, error } = await query
+
+    if (!error && data) {
+      const itemMap: Record<string, TopSellingItem> = {}
+      data.forEach((row: any) => {
+        const name = row.item_name
+        const qty = row.quantity || 1
+        const rev = (row.price || 0) * qty
+        if (!itemMap[name]) {
+          itemMap[name] = { item_name: name, quantity_sold: 0, total_revenue: 0 }
+        }
+        itemMap[name].quantity_sold += qty
+        itemMap[name].total_revenue += rev
+      })
+
+      return Object.values(itemMap)
+        .sort((a, b) => b.quantity_sold - a.quantity_sold)
+        .slice(0, limit)
+    }
+  } catch (e) {
+    console.warn('Top items query with join failed, trying fallback:', e)
+  }
+
+  // Fallback: simple query on order_items table
+  const { data: rawItems } = await supabase.from('order_items').select('item_name, quantity, price')
+  if (!rawItems) return []
+
+  const fallbackMap: Record<string, TopSellingItem> = {}
+  rawItems.forEach((item) => {
+    const name = item.item_name
+    const qty = item.quantity || 1
+    const rev = (item.price || 0) * qty
+    if (!fallbackMap[name]) {
+      fallbackMap[name] = { item_name: name, quantity_sold: 0, total_revenue: 0 }
+    }
+    fallbackMap[name].quantity_sold += qty
+    fallbackMap[name].total_revenue += rev
+  })
+
+  return Object.values(fallbackMap)
+    .sort((a, b) => b.quantity_sold - a.quantity_sold)
+    .slice(0, limit)
+}
+

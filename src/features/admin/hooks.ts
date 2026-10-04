@@ -30,6 +30,8 @@ import {
   toggleCouponActiveStatus,
   fetchAdminReviews,
   replyToReview,
+  fetchSalesSummary,
+  fetchTopSellingItems,
   CreateMenuItemPayload,
 } from './api'
 import { Settings, Category, OrderStatus, Coupon } from '@/types/database'
@@ -447,3 +449,19 @@ export function useReplyToReviewMutation() {
     },
   })
 }
+
+// ---------- SALES SUMMARY & REPORTS HOOKS ----------
+export function useSalesSummaryQuery(fromDate?: string, toDate?: string) {
+  return useQuery({
+    queryKey: ['sales-summary', fromDate, toDate],
+    queryFn: () => fetchSalesSummary(fromDate, toDate),
+  })
+}
+
+export function useTopSellingItemsQuery(limit = 5, fromDate?: string, toDate?: string) {
+  return useQuery({
+    queryKey: ['top-selling-items', limit, fromDate, toDate],
+    queryFn: () => fetchTopSellingItems(limit, fromDate, toDate),
+  })
+}
+
