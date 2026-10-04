@@ -3,13 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useSettingsQuery } from '@/features/admin/hooks'
 import { MenuItemWithDetails } from '@/features/menu/api'
 import { usePublicCategoriesQuery, usePublicMenuItemsQuery, useActiveCouponsQuery } from '@/features/menu/hooks'
+import { useRestaurantRatingQuery } from '@/features/reviews/hooks'
 import { ItemBottomSheet } from '@/features/menu/ItemBottomSheet'
 import { Skeletons } from '@/components/common/Skeletons'
 import { ErrorState } from '@/components/common/ErrorState'
 import { VegDot } from '@/components/common/VegDot'
 import { Price } from '@/components/common/Price'
 import { BRAND_CONFIG } from '@/config/brand'
-import { MapPin, Bell, Search, Sparkles, AlertCircle } from 'lucide-react'
+import { MapPin, Bell, Search, Sparkles, AlertCircle, Star } from 'lucide-react'
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate()
@@ -17,6 +18,7 @@ export const HomePage: React.FC = () => {
   const { data: categories, isLoading: isCatLoading } = usePublicCategoriesQuery()
   const { data: menuItems, isLoading: isItemsLoading, isError, refetch } = usePublicMenuItemsQuery()
   const { data: coupons } = useActiveCouponsQuery()
+  const { data: ratingStats } = useRestaurantRatingQuery()
 
   const [selectedItemForSheet, setSelectedItemForSheet] = useState<MenuItemWithDetails | null>(null)
 
@@ -25,17 +27,28 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-6">
-      {/* 1. Location & Bell Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-brand-border shadow-subtle">
+      {/* 1. Location & Rating Header */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-brand-border shadow-subtle shrink">
           <MapPin className="w-4 h-4 text-brand-primary shrink-0" />
-          <span className="text-xs font-semibold text-brand-text truncate max-w-[200px]">
+          <span className="text-xs font-semibold text-brand-text truncate max-w-[160px]">
             Delivering within {settings?.delivery_radius_km || BRAND_CONFIG.deliveryRadiusKm} km
           </span>
         </div>
+
+        {ratingStats && (
+          <div className="flex items-center gap-1 bg-amber-50 text-amber-900 border border-amber-200/80 px-2.5 py-1 rounded-full text-xs font-extrabold shadow-subtle shrink-0">
+            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+            <span>{ratingStats.averageFoodRating}</span>
+            {ratingStats.totalReviews > 0 && (
+              <span className="text-[10px] text-amber-700 font-medium">({ratingStats.totalReviews})</span>
+            )}
+          </div>
+        )}
+
         <Link
           to="/notifications"
-          className="p-2 text-brand-muted hover:text-brand-primary rounded-full hover:bg-white transition-colors border border-transparent hover:border-brand-border"
+          className="p-2 text-brand-muted hover:text-brand-primary rounded-full hover:bg-white transition-colors border border-transparent hover:border-brand-border shrink-0"
         >
           <Bell className="w-5 h-5" />
         </Link>

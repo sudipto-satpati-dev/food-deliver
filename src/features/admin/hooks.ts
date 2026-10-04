@@ -28,6 +28,8 @@ import {
   updateCoupon,
   deleteCoupon,
   toggleCouponActiveStatus,
+  fetchAdminReviews,
+  replyToReview,
   CreateMenuItemPayload,
 } from './api'
 import { Settings, Category, OrderStatus, Coupon } from '@/types/database'
@@ -419,6 +421,29 @@ export function useToggleCouponActiveMutation() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-coupons'] })
       queryClient.invalidateQueries({ queryKey: ['active-coupons'] })
+    },
+  })
+}
+
+// ---------- ADMIN REVIEWS HOOKS ----------
+export function useAdminReviewsQuery() {
+  return useQuery({
+    queryKey: ['admin-reviews'],
+    queryFn: fetchAdminReviews,
+  })
+}
+
+export function useReplyToReviewMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ reviewId, reply }: { reviewId: string; reply: string }) =>
+      replyToReview(reviewId, reply),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-reviews'] })
+      toast.success('Reply saved successfully!')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to save reply.')
     },
   })
 }

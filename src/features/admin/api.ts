@@ -444,3 +444,34 @@ export async function toggleCouponActiveStatus(id: string, isActive: boolean): P
 
   if (error) throw error
 }
+
+// ---------- ADMIN REVIEWS ----------
+import { Review } from '@/types/database'
+
+export interface AdminReviewItem extends Review {
+  orders?: {
+    order_no: number
+    customer_name: string
+    customer_phone: string
+    placed_at: string
+  }
+}
+
+export async function fetchAdminReviews(): Promise<AdminReviewItem[]> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*, orders(order_no, customer_name, customer_phone, placed_at)')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return (data as AdminReviewItem[]) || []
+}
+
+export async function replyToReview(reviewId: string, reply: string): Promise<void> {
+  const { error } = await supabase
+    .from('reviews')
+    .update({ admin_reply: reply.trim() || null })
+    .eq('id', reviewId)
+
+  if (error) throw new Error(error.message || 'Failed to update review reply')
+}
