@@ -374,3 +374,73 @@ export async function refundPayment(orderId: string): Promise<void> {
     if (updateErr) throw new Error(error?.message || data?.error || updateErr.message)
   }
 }
+
+// ---------- COUPONS ----------
+import { Coupon } from '@/types/database'
+
+export async function fetchAdminCoupons(): Promise<Coupon[]> {
+  const { data, error } = await supabase
+    .from('coupons')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return (data as Coupon[]) || []
+}
+
+export async function fetchAdminCouponById(id: string): Promise<Coupon> {
+  const { data, error } = await supabase
+    .from('coupons')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) throw error
+  return data as Coupon
+}
+
+export async function createCoupon(coupon: Omit<Coupon, 'id' | 'created_at'>): Promise<Coupon> {
+  const cleanCode = coupon.code.toUpperCase().replace(/\s+/g, '')
+  const { data, error } = await supabase
+    .from('coupons')
+    .insert([{ ...coupon, code: cleanCode }])
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message || 'Failed to create coupon')
+  return data as Coupon
+}
+
+export async function updateCoupon(id: string, updates: Partial<Coupon>): Promise<Coupon> {
+  if (updates.code) {
+    updates.code = updates.code.toUpperCase().replace(/\s+/g, '')
+  }
+
+  const { data, error } = await supabase
+    .from('coupons')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw new Error(error.message || 'Failed to update coupon')
+  return data as Coupon
+}
+
+export async function deleteCoupon(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('coupons')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
+export async function toggleCouponActiveStatus(id: string, isActive: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('coupons')
+    .update({ is_active: isActive })
+    .eq('id', id)
+
+  if (error) throw error
+}

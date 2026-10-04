@@ -62,5 +62,11 @@ export async function validateCoupon(code: string, subtotal: number): Promise<Co
   })
 
   if (error) throw new Error(error.message || 'Invalid coupon code')
-  return data as CouponValidationResult
+
+  const res = data as any
+  if (res && res.valid === false) {
+    throw new Error(res.message || 'Coupon cannot be applied.')
+  }
+
+  return res as CouponValidationResult
 }

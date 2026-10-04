@@ -22,9 +22,15 @@ import {
   assignRiderToOrder,
   adminMarkDelivered,
   refundPayment,
+  fetchAdminCoupons,
+  fetchAdminCouponById,
+  createCoupon,
+  updateCoupon,
+  deleteCoupon,
+  toggleCouponActiveStatus,
   CreateMenuItemPayload,
 } from './api'
-import { Settings, Category, OrderStatus } from '@/types/database'
+import { Settings, Category, OrderStatus, Coupon } from '@/types/database'
 import { toast } from 'sonner'
 import { soundManager } from '@/lib/sound'
 
@@ -324,6 +330,95 @@ export function useRefundPaymentMutation() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Refund processing failed.')
+    },
+  })
+}
+
+// ---------- COUPONS HOOKS ----------
+export function useAdminCouponsQuery() {
+  return useQuery({
+    queryKey: ['admin-coupons'],
+    queryFn: fetchAdminCoupons,
+  })
+}
+
+export function useAdminCouponDetailQuery(id: string | undefined) {
+  return useQuery({
+    queryKey: ['admin-coupon', id],
+    queryFn: () => fetchAdminCouponById(id!),
+    enabled: !!id,
+  })
+}
+
+export function useCreateCouponMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: Omit<Coupon, 'id' | 'created_at'>) => createCoupon(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-coupons'] })
+      queryClient.invalidateQueries({ queryKey: ['active-coupons'] })
+      toast.success('Coupon created successfully! 🎟️')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to create coupon.')
+    },
+  })
+}
+
+export function useUpdateCouponMutation(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: Partial<Coupon>) => updateCoupon(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-coupons'] })
+      queryClient.invalidateQueries({ queryKey: ['admin-coupon', id] })
+      queryClient.invalidateQueries({ queryKey: ['active-coupons'] })
+      toast.success('Coupon updated successfully!')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update coupon.')
+    },
+  })
+}
+
+export function useDeleteCouponMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteCoupon(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-coupons'] })
+      queryClient.invalidateQueries({ queryKey: ['active-coupons'] })
+      toast.success('Coupon deleted!')
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to delete coupon.')
+    },
+  })
+}
+
+export function useToggleCouponActiveMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      toggleCouponActiveStatus(id, isActive),
+    onMutate: async ({ id, isActive }) => {
+      await queryClient.cancelQueries({ queryKey: ['admin-coupons'] })
+      const previous = queryClient.getQueryData(['admin-coupons'])
+      queryClient.setQueryData(['admin-coupons'], (old: any) => {
+        if (!old) return old
+        return old.map((c: any) => (c.id === id ? { ...c, is_active: isActive } : c))
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['admin-coupons'], context.previous)
+      }
+      toast.error('Failed to update coupon status.')
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-coupons'] })
+      queryClient.invalidateQueries({ queryKey: ['active-coupons'] })
     },
   })
 }
