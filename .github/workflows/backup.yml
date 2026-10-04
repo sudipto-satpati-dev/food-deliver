@@ -1,0 +1,26 @@
+name: Weekly Supabase Database Backup
+
+on:
+  schedule:
+    - cron: '0 21 * * 0' # Every Sunday at 21:00 UTC
+  workflow_dispatch:
+
+jobs:
+  db-backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install PostgreSQL client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Run pg_dump backup
+        run: |
+          pg_dump "${{ secrets.SUPABASE_DB_URL }}" --no-owner --no-privileges -Fc -f backup.dump
+
+      - name: Upload Backup Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backup.dump
+          retention-days: 30

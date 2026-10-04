@@ -1,0 +1,16 @@
+name: Keepalive Supabase DB
+
+on:
+  schedule:
+    - cron: '0 3 */3 * *' # Every 3 days at 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST Endpoint to prevent free-tier project pause
+        run: |
+          curl -fsS "${{ secrets.SUPABASE_URL }}/rest/v1/settings?select=id" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
