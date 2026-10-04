@@ -7,6 +7,7 @@ import { AppRoutes } from '@/routes/index'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { OfflineBanner } from '@/components/common/OfflineBanner'
 import { PwaInstallBanner } from '@/components/common/PwaInstallBanner'
+import { SplashScreen } from '@/components/common/SplashScreen'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,6 +22,7 @@ const queryClient = new QueryClient({
 export const App: React.FC = () => {
   return (
     <ErrorBoundary>
+      <SplashScreen durationMs={2200} />
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <BrowserRouter>
