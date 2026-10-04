@@ -26,9 +26,12 @@ import {
   Eye,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuth } from '@/features/auth/hooks'
+import { PushNotificationPrompt } from '@/components/common/PushNotificationPrompt'
 
 export const AdminOrdersPage: React.FC = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { data: orders, isLoading, isError, refetch } = useAdminOrdersQuery()
   const { data: riders } = useAdminRidersQuery()
 
@@ -125,6 +128,8 @@ export const AdminOrdersPage: React.FC = () => {
           <span>REALTIME AUDIO ALERTS ACTIVE</span>
         </div>
       </div>
+
+      <PushNotificationPrompt userId={user?.id} />
 
       {/* Tabs Bar */}
       <div className="flex overflow-x-auto no-scrollbar border-b border-brand-border gap-2 pb-1">

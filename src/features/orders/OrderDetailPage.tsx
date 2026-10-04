@@ -33,6 +33,7 @@ import { useCartStore } from '@/stores/cart'
 import { useCreateRazorpayOrderMutation, useVerifyRazorpayPaymentMutation } from '@/features/checkout/hooks'
 import { loadRazorpayScript } from '@/lib/razorpay'
 import { useAuth } from '@/features/auth/hooks'
+import { PushNotificationPrompt } from '@/components/common/PushNotificationPrompt'
 
 export const OrderDetailPage: React.FC = () => {
   const { id: orderId } = useParams<{ id: string }>()
@@ -210,6 +211,9 @@ export const OrderDetailPage: React.FC = () => {
 
         <StatusBadge status={order.status} />
       </div>
+
+      {/* Web Push Permission Banner */}
+      <PushNotificationPrompt userId={user?.id} />
 
       {/* Pending Payment Pay Now Banner */}
       {order.status === 'pending_payment' && order.payment_method === 'online' && (
